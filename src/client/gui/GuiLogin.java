@@ -96,8 +96,8 @@ public class GuiLogin {
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-
 			});
+			
 		} else {
 			statusText = "Failed to log in!";
 		}
