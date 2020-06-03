@@ -20,11 +20,15 @@ import javafx.stage.Stage;
 public class GuiLogin {
 	private URL layoutFile;
 	private FXMLLoader loader;
+
 	ClientConnection connection;
 	Stage loginWindow;
+	boolean loginStatus;
 
 	// Components to bind to FXML
 	public TextField textfield_Username = null;
+
+
 	public PasswordField passwordfield_Password = null;
 	public Button button_Login = null;
 	public Button button_Cancel = null;
@@ -44,6 +48,18 @@ public class GuiLogin {
 		loginWindow = new Stage();
 		loginWindow.setScene(scene);
 		loginWindow.setTitle("Login");
+		loginWindow.setOnCloseRequest((e)->{
+			handleExit();
+		});
+	}
+
+	private void handleExit() {
+		try {
+			connection.handleExit();
+			loginWindow.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	// Loads FXML as layout for FXMLLoader
@@ -71,38 +87,43 @@ public class GuiLogin {
 	// Button Function for "Cancel" Button
 	@FXML
 	private void onCancelClick() {
-		try {
-			connection.handleExit();
-			loginWindow.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		handleExit();
 	}
 
 	// Getter for stage to be called from launcher
 	public Stage getStage() {
 		return loginWindow;
 	}
-
+	
+	public boolean isLoginStatus() {
+		return loginStatus;
+	}
+	
 	// Updates the label for login status and spawns a Client GUI if success
 	public void updateLoginStatus(String status) {
 		String statusText;
 		if (("Success").equalsIgnoreCase(status)) {
+			loginStatus = true;
 			statusText = "Successfully logged in!";
-			Platform.runLater(()->{
+			Platform.runLater(() -> {
 				try {
+					label_Status.setText(statusText);
 					Thread.sleep(1000);
 					loginWindow.close();
 				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+
 			});
-			
 		} else {
+			loginStatus = false;
 			statusText = "Failed to log in!";
+			Platform.runLater(() -> {
+				label_Status.setText(statusText);
+			});
 		}
-		Platform.runLater(()->{
-			label_Status.setText(statusText);
-		});
+
 	}
+
 }

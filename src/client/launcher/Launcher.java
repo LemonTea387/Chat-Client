@@ -1,5 +1,6 @@
 package client.launcher;
 
+import client.gui.GuiClient;
 import client.gui.GuiConnecting;
 import client.gui.GuiLogin;
 import client.network.state.ConnectionState;
@@ -19,6 +20,10 @@ public class Launcher extends Application {
 		if (connecting.getConnection().getConnectionState() == ConnectionState.CONNECTION_OKAY) {
 			GuiLogin login = new GuiLogin(connecting.getConnection());
 			login.getStage().showAndWait();
+			if (login.isLoginStatus()) {
+				GuiClient client = new GuiClient(connecting.getConnection());
+				client.getStage().show();
+			}
 		}
 	}
 
