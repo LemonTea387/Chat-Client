@@ -11,7 +11,9 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 
+import client.gui.GuiClient;
 import client.gui.GuiConnecting;
+import client.gui.GuiLogin;
 import client.listeners.MessageListener;
 import client.network.state.ConnectionState;
 
@@ -24,12 +26,15 @@ public class ClientConnection extends Thread {
 	private BufferedReader br;
 	private BufferedWriter bw;
 	private ArrayList<MessageListener> msgListeners = new ArrayList<>();
-	
+
 	ConnectionState state;
-	GuiConnecting gui;
-	
-	public ClientConnection(String url, int port, GuiConnecting gui) {
-		this.gui = gui;
+	GuiConnecting guiConnecting;
+	GuiLogin guiLogin;
+	GuiClient guiClient;
+	boolean loggedIn;
+
+	public ClientConnection(String url, int port, GuiConnecting guiConnecting) {
+		this.guiConnecting = guiConnecting;
 		this.url = url;
 		this.port = port;
 	}
@@ -42,7 +47,9 @@ public class ClientConnection extends Thread {
 		super.run();
 	}
 
-	public void login(String username,String password) {
+	// Login with credentials provided
+	public void login(String username, String password,GuiLogin guiInCharge) {
+		guiLogin = guiInCharge;
 		send("login " + username + " " + password);
 	}
 
@@ -50,22 +57,34 @@ public class ClientConnection extends Thread {
 	private void handleCommunication() {
 		String input;
 		String[] tokens;
-		String cmd,attribute,content;
+		String cmd, attribute, content;
 		try {
-			while(!connectionSocket.isClosed() && (input = br.readLine().trim())!=null) {
-				tokens = input.split(" ",3);
-				cmd = tokens[0];
-				attribute = tokens[1];
-				content = tokens[2];
-				if("message".equalsIgnoreCase(cmd))	handleReceiveMessage(attribute,content);
+			while (!connectionSocket.isClosed() && (input = br.readLine().trim()) != null) {
+				tokens = input.split(" ", 3);
+				if(tokens.length == 3) {
+					cmd = tokens[0];
+					attribute = tokens[1];
+					content = tokens[2];
+					if ("message".equalsIgnoreCase(cmd))
+						handleReceiveMessage(attribute, content);
+				}
+				else {
+					if(tokens[0].equalsIgnoreCase("Success")) {
+						guiLogin.updateLoginStatus(tokens[0]);
+					}else if(tokens[0].equalsIgnoreCase("Failed")) {
+						guiLogin.updateLoginStatus(tokens[0]);
+					}
+				}
+
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}	
+	}
 
-	private void handleReceiveMessage(String sender,String content) {
-		for(MessageListener listener : msgListeners) {
+	// Handles every message received
+	private void handleReceiveMessage(String sender, String content) {
+		for (MessageListener listener : msgListeners) {
 			listener.onMessage(sender, content);
 		}
 	}
@@ -78,13 +97,11 @@ public class ClientConnection extends Thread {
 			output = connectionSocket.getOutputStream();
 			br = new BufferedReader(new InputStreamReader(input));
 			bw = new BufferedWriter(new OutputStreamWriter(output));
-			this.addMessageListener(new MessageListener() {
-				@Override
-				public void onMessage(String sender, String content) {
-					System.out.println(sender + content);
-				}});
+			this.addMessageListener((sender, content) -> {
+				System.out.println(sender + content);
+			});
 			state = ConnectionState.CONNECTION_OKAY;
-			gui.handleConnectionStatus(state);
+			guiConnecting.handleConnectionStatus(state);
 			return true;
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
@@ -92,15 +109,17 @@ public class ClientConnection extends Thread {
 			e.printStackTrace();
 		}
 		state = ConnectionState.CONNECTION_FAILED;
-		gui.handleConnectionStatus(state);
+		guiConnecting.handleConnectionStatus(state);
 		return false;
 	}
+
 	public void handleExit() throws IOException {
+		send("quit");
 		input.close();
 		output.close();
 		connectionSocket.close();
-	} 
-	
+	}
+
 	// Writes a string to the output stream of clientSocket
 	private void send(String command) {
 		try {
@@ -110,10 +129,11 @@ public class ClientConnection extends Thread {
 			e.printStackTrace();
 		}
 	}
+
 	private void addMessageListener(MessageListener listener) {
 		msgListeners.add(listener);
 	}
-	
+
 	public ConnectionState getConnectionState() {
 		return state;
 	}

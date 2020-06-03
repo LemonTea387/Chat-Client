@@ -6,6 +6,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 
 import client.network.ClientConnection;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -29,14 +30,14 @@ public class GuiLogin {
 	public Button button_Cancel = null;
 	public Label label_Status = null;
 
+	// Accepts a reference to the connection from the connecting frame
 	public GuiLogin(ClientConnection connection) throws IOException, URISyntaxException {
-			this.connection = connection;
-			loadFXML();
-			init();
+		this.connection = connection;
+		loadFXML();
+		init();
 	}
 
-
-
+	// Loads in all the GUI from FXMLLoader
 	private void init() throws IOException {
 		VBox root = loader.<VBox>load();
 		Scene scene = new Scene(root);
@@ -45,6 +46,7 @@ public class GuiLogin {
 		loginWindow.setTitle("Login");
 	}
 
+	// Loads FXML as layout for FXMLLoader
 	private void loadFXML() {
 		try {
 			layoutFile = (getClass().getResource("/LoginFieldsLayout.fxml").toURI()).toURL();
@@ -58,12 +60,15 @@ public class GuiLogin {
 		loader.setController(this);
 	}
 
+	// Button Function for "Login" Button
 	@FXML
 	private void onLoginClick() {
 		String username = textfield_Username.getText();
 		String password = passwordfield_Password.getText();
+		connection.login(username, password, this);
 	}
 
+	// Button Function for "Cancel" Button
 	@FXML
 	private void onCancelClick() {
 		try {
@@ -74,7 +79,30 @@ public class GuiLogin {
 		}
 	}
 
+	// Getter for stage to be called from launcher
 	public Stage getStage() {
 		return loginWindow;
+	}
+
+	// Updates the label for login status and spawns a Client GUI if success
+	public void updateLoginStatus(String status) {
+		String statusText;
+		if (("Success").equalsIgnoreCase(status)) {
+			statusText = "Successfully logged in!";
+			Platform.runLater(()->{
+				try {
+					Thread.sleep(1000);
+					loginWindow.close();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+
+			});
+		} else {
+			statusText = "Failed to log in!";
+		}
+		Platform.runLater(()->{
+			label_Status.setText(statusText);
+		});
 	}
 }
