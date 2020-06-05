@@ -111,7 +111,6 @@ public class GuiLogin {
 					Thread.sleep(1000);
 					loginWindow.close();
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 
