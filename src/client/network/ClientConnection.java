@@ -12,8 +12,6 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 import client.gui.GuiClient;
-import client.gui.GuiConnecting;
-import client.gui.GuiLogin;
 import client.listeners.MessageListener;
 import client.network.state.ConnectionState;
 
@@ -22,7 +20,7 @@ import client.network.state.ConnectionState;
  * @author LemonTea387
  *
  */
-public class ClientConnection extends Thread {
+public class ClientConnection{
 	private String url;
 	int port;
 	private Socket connectionSocket;
@@ -33,39 +31,41 @@ public class ClientConnection extends Thread {
 	private ArrayList<MessageListener> msgListeners = new ArrayList<>();
 
 	ConnectionState state;
-	GuiConnecting guiConnecting;
-	GuiLogin guiLogin;
 	GuiClient guiClient;
-	boolean loggedIn;
-	
-	public ClientConnection(String url, int port, GuiConnecting guiConnecting) {
-		this.guiConnecting = guiConnecting;
+
+	public ClientConnection(String url, int port) {
 		this.url = url;
 		this.port = port;
-	}
-
-	@Override
-	public void run() {
-		if (handleConnection()) {
-			handleCommunication();
-		}
-		super.run();
 	}
 	
 	/**
 	 * Specialize method to login with supplied credentials
+	 * 
 	 * @param username Supply username credential
 	 * @param password Supply password credential
-	 * @param guiInCharge 
 	 */
 	// Login with credentials provided
-	public void login(String username, String password, GuiLogin guiInCharge) {
-		guiLogin = guiInCharge;
-		send("login " + username + " " + password);
+	public boolean login(String username, String password) {
+		String response = "";
+		try {
+			send("login " + username + " " + password);
+			String input = br.readLine();
+			if(input != null) {
+				response += input;
+			}
+			System.out.println("response : " + response);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		if ("Success".equalsIgnoreCase(response)) {
+			return true;
+		}
+		return false;
 	}
-	
+
 	/**
 	 * Called when program is about to exit, closes the client connection
+	 * 
 	 * @throws IOException When streams and socket failed to close()
 	 * 
 	 */
@@ -76,13 +76,13 @@ public class ClientConnection extends Thread {
 		output.close();
 		connectionSocket.close();
 	}
-	
+
 	/**
 	 * 
-	 * @return ConnectionState
+	 * @return Socket
 	 */
-	public ConnectionState getConnectionState() {
-		return state;
+	public Socket getSocket() {
+		return connectionSocket;
 	}
 
 	// Handles all the communication of client and server
@@ -99,14 +99,7 @@ public class ClientConnection extends Thread {
 					content = tokens[2];
 					if ("message".equalsIgnoreCase(cmd))
 						handleReceiveMessage(attribute, content);
-				} else {
-					if (tokens[0].equalsIgnoreCase("Success")) {
-						guiLogin.updateLoginStatus(tokens[0]);
-					} else if (tokens[0].equalsIgnoreCase("Failed")) {
-						guiLogin.updateLoginStatus(tokens[0]);
-					}
 				}
-
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -121,26 +114,25 @@ public class ClientConnection extends Thread {
 	}
 
 	// Handles the initial connection to the server
-	private boolean handleConnection() {
+	public boolean handleConnection() {
 		try {
 			connectionSocket = new Socket(url, port);
 			input = connectionSocket.getInputStream();
 			output = connectionSocket.getOutputStream();
 			br = new BufferedReader(new InputStreamReader(input));
 			bw = new BufferedWriter(new OutputStreamWriter(output));
+			
 			this.addMessageListener((sender, content) -> {
 				System.out.println(sender + content);
 			});
-			state = ConnectionState.CONNECTION_OKAY;
-			guiConnecting.updateConnectionStatus(state);
+			
 			return true;
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		state = ConnectionState.CONNECTION_FAILED;
-		guiConnecting.updateConnectionStatus(state);
+		
 		return false;
 	}
 

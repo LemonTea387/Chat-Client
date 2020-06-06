@@ -6,7 +6,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 
 import client.network.ClientConnection;
-import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -23,7 +22,6 @@ public class GuiLogin {
 
 	ClientConnection connection;
 	Stage loginWindow;
-	boolean loginStatus;
 
 	// Components to bind to FXML
 	public TextField textfield_Username = null;
@@ -33,10 +31,20 @@ public class GuiLogin {
 	public Label label_Status = null;
 
 	// Accepts a reference to the connection from the connecting frame
-	public GuiLogin(ClientConnection connection) throws IOException, URISyntaxException {
-		this.connection = connection;
+	public GuiLogin() throws IOException, URISyntaxException {
 		loadFXML();
 		init();
+	}
+
+	private boolean attemptConnect() {
+		connection = new ClientConnection("localhost", 10000);
+		if (connection.handleConnection()) {
+			return true;
+		} else {
+			System.out.println("Connection failed!");
+			label_Status.setText("Connection failed!");
+			return false;
+		}
 	}
 
 	// Loads in all the GUI from FXMLLoader
@@ -46,7 +54,7 @@ public class GuiLogin {
 		loginWindow = new Stage();
 		loginWindow.setScene(scene);
 		loginWindow.setTitle("Login");
-		loginWindow.setOnCloseRequest((e)->{
+		loginWindow.setOnCloseRequest((e) -> {
 			handleExit();
 		});
 	}
@@ -54,7 +62,9 @@ public class GuiLogin {
 	// Handler for exits in this stage of program
 	private void handleExit() {
 		try {
-			connection.handleExit();
+			if (connection != null && connection.getSocket() != null) {
+				connection.handleExit();
+			}
 			loginWindow.close();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -78,9 +88,16 @@ public class GuiLogin {
 	// Button Function for "Login" Button
 	@FXML
 	private void onLoginClick() {
-		String username = textfield_Username.getText();
-		String password = passwordfield_Password.getText();
-		connection.login(username, password, this);
+		if (attemptConnect()) {
+			String username = textfield_Username.getText().trim();
+			String password = passwordfield_Password.getText();
+			if (connection.login(username, password)) {
+				label_Status.setText("Successfully Logged in!");
+				loginWindow.close();
+			} else {
+				label_Status.setText("Failed to login!");
+			}
+		}
 	}
 
 	// Button Function for "Cancel" Button
@@ -92,36 +109,6 @@ public class GuiLogin {
 	// Getter for stage to be called from launcher
 	public Stage getStage() {
 		return loginWindow;
-	}
-	
-	public boolean isLoginStatus() {
-		return loginStatus;
-	}
-	
-	// Updates the label for login status and spawns a Client GUI if success
-	public void updateLoginStatus(String status) {
-		String statusText;
-		if (("Success").equalsIgnoreCase(status)) {
-			loginStatus = true;
-			statusText = "Successfully logged in!";
-			Platform.runLater(() -> {
-				try {
-					label_Status.setText(statusText);
-					Thread.sleep(1000);
-					loginWindow.close();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-
-			});
-		} else {
-			loginStatus = false;
-			statusText = "Failed to log in!";
-			Platform.runLater(() -> {
-				label_Status.setText(statusText);
-			});
-		}
-
 	}
 
 }
