@@ -17,6 +17,11 @@ import client.gui.GuiLogin;
 import client.listeners.MessageListener;
 import client.network.state.ConnectionState;
 
+/**
+ * 
+ * @author LemonTea387
+ *
+ */
 public class ClientConnection extends Thread {
 	private String url;
 	int port;
@@ -32,7 +37,7 @@ public class ClientConnection extends Thread {
 	GuiLogin guiLogin;
 	GuiClient guiClient;
 	boolean loggedIn;
-
+	
 	public ClientConnection(String url, int port, GuiConnecting guiConnecting) {
 		this.guiConnecting = guiConnecting;
 		this.url = url;
@@ -46,11 +51,38 @@ public class ClientConnection extends Thread {
 		}
 		super.run();
 	}
-
+	
+	/**
+	 * Specialize method to login with supplied credentials
+	 * @param username Supply username credential
+	 * @param password Supply password credential
+	 * @param guiInCharge 
+	 */
 	// Login with credentials provided
-	public void login(String username, String password,GuiLogin guiInCharge) {
+	public void login(String username, String password, GuiLogin guiInCharge) {
 		guiLogin = guiInCharge;
 		send("login " + username + " " + password);
+	}
+	
+	/**
+	 * Called when program is about to exit, closes the client connection
+	 * @throws IOException When streams and socket failed to close()
+	 * 
+	 */
+	// Handler for when connection should be closed
+	public void handleExit() throws IOException {
+		send("quit");
+		input.close();
+		output.close();
+		connectionSocket.close();
+	}
+	
+	/**
+	 * 
+	 * @return ConnectionState
+	 */
+	public ConnectionState getConnectionState() {
+		return state;
 	}
 
 	// Handles all the communication of client and server
@@ -61,17 +93,16 @@ public class ClientConnection extends Thread {
 		try {
 			while (!connectionSocket.isClosed() && (input = br.readLine().trim()) != null) {
 				tokens = input.split(" ", 3);
-				if(tokens.length == 3) {
+				if (tokens.length == 3) {
 					cmd = tokens[0];
 					attribute = tokens[1];
 					content = tokens[2];
 					if ("message".equalsIgnoreCase(cmd))
 						handleReceiveMessage(attribute, content);
-				}
-				else {
-					if(tokens[0].equalsIgnoreCase("Success")) {
+				} else {
+					if (tokens[0].equalsIgnoreCase("Success")) {
 						guiLogin.updateLoginStatus(tokens[0]);
-					}else if(tokens[0].equalsIgnoreCase("Failed")) {
+					} else if (tokens[0].equalsIgnoreCase("Failed")) {
 						guiLogin.updateLoginStatus(tokens[0]);
 					}
 				}
@@ -101,7 +132,7 @@ public class ClientConnection extends Thread {
 				System.out.println(sender + content);
 			});
 			state = ConnectionState.CONNECTION_OKAY;
-			guiConnecting.handleConnectionStatus(state);
+			guiConnecting.updateConnectionStatus(state);
 			return true;
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
@@ -109,15 +140,8 @@ public class ClientConnection extends Thread {
 			e.printStackTrace();
 		}
 		state = ConnectionState.CONNECTION_FAILED;
-		guiConnecting.handleConnectionStatus(state);
+		guiConnecting.updateConnectionStatus(state);
 		return false;
-	}
-
-	public void handleExit() throws IOException {
-		send("quit");
-		input.close();
-		output.close();
-		connectionSocket.close();
 	}
 
 	// Writes a string to the output stream of clientSocket
@@ -134,7 +158,4 @@ public class ClientConnection extends Thread {
 		msgListeners.add(listener);
 	}
 
-	public ConnectionState getConnectionState() {
-		return state;
-	}
 }

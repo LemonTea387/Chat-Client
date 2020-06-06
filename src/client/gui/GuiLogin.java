@@ -27,8 +27,6 @@ public class GuiLogin {
 
 	// Components to bind to FXML
 	public TextField textfield_Username = null;
-
-
 	public PasswordField passwordfield_Password = null;
 	public Button button_Login = null;
 	public Button button_Cancel = null;
@@ -53,6 +51,7 @@ public class GuiLogin {
 		});
 	}
 
+	// Handler for exits in this stage of program
 	private void handleExit() {
 		try {
 			connection.handleExit();

@@ -67,4 +67,6 @@ public class GuiClient {
 	public Stage getStage() {
 		return clientWindow;
 	}
+	
+	
 }

@@ -62,7 +62,7 @@ public class GuiConnecting {
 	}
 
 	// Method to update the GUI once connection is properly established
-	public void handleConnectionStatus(ConnectionState state) {
+	public void updateConnectionStatus(ConnectionState state) {
 		if (state == ConnectionState.CONNECTION_OKAY) {
 			Platform.runLater(() -> {
 				stage.close();
