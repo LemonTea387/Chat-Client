@@ -10,9 +10,11 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.List;
 
 import client.gui.GuiClient;
 import client.listeners.MessageListener;
+import client.listeners.OnlineListener;
 import client.network.state.ConnectionState;
 
 /**
@@ -20,7 +22,7 @@ import client.network.state.ConnectionState;
  * @author LemonTea387
  *
  */
-public class ClientConnection{
+public class ClientConnection {
 	private String url;
 	int port;
 	private Socket connectionSocket;
@@ -28,7 +30,8 @@ public class ClientConnection{
 	private OutputStream output;
 	private BufferedReader br;
 	private BufferedWriter bw;
-	private ArrayList<MessageListener> msgListeners = new ArrayList<>();
+	private List<MessageListener> msgListeners = new ArrayList<MessageListener>();
+	private List<OnlineListener> onListeners = new ArrayList<OnlineListener>();
 
 	ConnectionState state;
 	GuiClient guiClient;
@@ -37,7 +40,7 @@ public class ClientConnection{
 		this.url = url;
 		this.port = port;
 	}
-	
+
 	/**
 	 * Specialize method to login with supplied credentials
 	 * 
@@ -50,7 +53,7 @@ public class ClientConnection{
 		try {
 			send("login " + username + " " + password);
 			String input = br.readLine();
-			if(input != null) {
+			if (input != null) {
 				response += input;
 			}
 			System.out.println("response : " + response);
@@ -99,11 +102,16 @@ public class ClientConnection{
 					content = tokens[2];
 					if ("message".equalsIgnoreCase(cmd))
 						handleReceiveMessage(attribute, content);
-				}
+				} else if ("Online".equalsIgnoreCase(tokens[0]) || "Offline".equalsIgnoreCase(tokens[0]))
+					handleOnlineStatus(tokens[1]);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	private void handleOnlineStatus(String username) {
+		
 	}
 
 	// Handles every message received
@@ -121,18 +129,21 @@ public class ClientConnection{
 			output = connectionSocket.getOutputStream();
 			br = new BufferedReader(new InputStreamReader(input));
 			bw = new BufferedWriter(new OutputStreamWriter(output));
-			
+
 			this.addMessageListener((sender, content) -> {
 				System.out.println(sender + content);
 			});
-			
+
+			this.addOnlineListener(() -> {
+
+			});
 			return true;
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+
 		return false;
 	}
 
@@ -148,6 +159,10 @@ public class ClientConnection{
 
 	private void addMessageListener(MessageListener listener) {
 		msgListeners.add(listener);
+	}
+
+	private void addOnlineListener(OnlineListener listener) {
+		onListeners.add(listener);
 	}
 
 }

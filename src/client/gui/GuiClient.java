@@ -32,6 +32,7 @@ public class GuiClient {
 	private void init() throws IOException {
 		VBox root = loader.<VBox>load();
 		Scene scene = new Scene(root);
+		
 		clientWindow = new Stage();
 		clientWindow.setScene(scene);
 		clientWindow.setTitle("Chat Client");

@@ -110,5 +110,9 @@ public class GuiLogin {
 	public Stage getStage() {
 		return loginWindow;
 	}
+	
+	public ClientConnection getConnection() {
+		return connection;
+	}
 
 }
